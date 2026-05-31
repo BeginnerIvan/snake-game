@@ -22,6 +22,13 @@ let lastStep;     // время последнего шага логики (мс
 best = Number(localStorage.getItem('snake-best') || 0);
 bestEl.textContent = best;
 
+// Поле — нижне-левый прямоугольный треугольник. Клетка проходима, если она
+// внутри поля И ниже-левее гипотенузы (диагональ из левого-верхнего в
+// правый-нижний угол), т.е. y >= x.
+function inside(x, y) {
+  return x >= 0 && x < COLS && y >= 0 && y < ROWS && y >= x;
+}
+
 // ---------- Звук (Web Audio, синтез на лету) ----------
 let audioCtx = null;
 let muted = localStorage.getItem('snake-muted') === '1';
@@ -97,7 +104,8 @@ function updateParticles(dt) {
 
 // ---------- Игровая логика ----------
 function reset() {
-  snake = [{ x: 9, y: 10 }, { x: 8, y: 10 }, { x: 7, y: 10 }];
+  // старт в «толстой» нижней части треугольника, движемся вправо
+  snake = [{ x: 6, y: 15 }, { x: 5, y: 15 }, { x: 4, y: 15 }];
   prevSnake = snake.map(s => ({ ...s }));
   dir = { x: 1, y: 0 };
   nextDir = { ...dir };
@@ -117,7 +125,7 @@ function placeFood() {
   const free = [];
   for (let x = 0; x < COLS; x++) {
     for (let y = 0; y < ROWS; y++) {
-      if (!snake.some(s => s.x === x && s.y === y)) free.push({ x, y });
+      if (inside(x, y) && !snake.some(s => s.x === x && s.y === y)) free.push({ x, y });
     }
   }
   food = free.length ? free[rand(free.length)] : null; // null = поле заполнено
@@ -130,8 +138,8 @@ function step() {
   dir = nextDir;
   const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
 
-  // столкновение со стеной
-  if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) {
+  // столкновение со стеной (включая диагональную гипотенузу)
+  if (!inside(head.x, head.y)) {
     return gameOver();
   }
   // столкновение с собой (хвост сдвинется, поэтому последний сегмент не считаем,
@@ -188,12 +196,39 @@ function segCenter(i, t) {
   return { x, y };
 }
 
+// путь треугольного поля: левый-верхний → левый-нижний → правый-нижний угол
+function fieldPath() {
+  const W = canvas.width, H = canvas.height;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(0, H);
+  ctx.lineTo(W, H);
+  ctx.closePath();
+}
+
 function draw(t) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  // заливка поля (вне треугольника остаётся прозрачным → виден фон страницы)
+  fieldPath();
+  ctx.fillStyle = '#0a0d12';
+  ctx.fill();
+
+  // игровые объекты рисуем с обрезкой по треугольнику
+  ctx.save();
+  fieldPath();
+  ctx.clip();
   drawFood();
   drawSnake(t);
   drawParticles();
+  ctx.restore();
+
+  // контур-рамка поля поверх всего
+  fieldPath();
+  ctx.strokeStyle = '#4ade80';
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
 }
 
 function drawFood() {

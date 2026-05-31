@@ -45,11 +45,10 @@ h1 {
 .mute:hover { background: #243040; }
 
 canvas {
-  background: #0a0d12;
-  border: 3px solid #4ade80;
-  border-radius: 8px;
+  background: transparent;          /* форма поля рисуется на самом canvas */
   display: block;
-  box-shadow: 0 0 16px rgba(74, 222, 128, 0.45);
+  /* свечение идёт по непрозрачным пикселям → обводит треугольник */
+  filter: drop-shadow(0 0 10px rgba(74, 222, 128, 0.55));
 }
 
 .hint {
