@@ -1,0 +1,14 @@
+# системное
+.DS_Store
+Thumbs.db
+
+# редакторы
+.vscode/
+.idea/
+
+# среда Claude (на случай если попадёт в папку)
+.claude/
+tmp/
+
+# зависимости (если позже появится npm)
+node_modules/
